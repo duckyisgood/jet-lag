@@ -58,9 +58,11 @@ class Team:
     completed_challenges: list[Challenge] = []
     deck: list[Card]
     players: list[str]
+    team_type: str
 
-    def __init__(self, players: list[str] = None):
+    def __init__(self, players: list[str] = None, team_type = "runners"):
         self.players = players
+        self.team_type = team_type
 
     def startRun(self):
         self.deck = whole_deck
@@ -118,8 +120,8 @@ class Team:
 
 
 class Game:
-    chasers: Team
-    runners: Team
+    chasers: Team(team_type="chasers")
+    runners: Team(team_type="runners")
 
     def __init__(self, total_players=0, teams: list[str] = None):
         """
