@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jet Lag: The Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    .shop, .draw, .stats, .hand { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Jet Lag: The Game</h1>
+
+  <div class="stats">
+    <h2>Team Stats</h2>
+    <p><strong>Coins:</strong> <span id="coins">{{ team.coins }}</span></p>
+    <p><strong>Challenge Points:</strong> <span id="points">{{ team.points }}</span></p>
+  </div>
+
+  <div class="draw">
+    <h2>Draw a Challenge</h2>
+    <button id="drawButton">Draw</button>
+
+    <div id="drawPool" style="display: none;">
+      <h3>Choose a Card</h3>
+      <!-- Cards will be dynamically injected here -->
+    </div>
+  </div>
+
+  <div class="hand">
+    <h2>Current Hand</h2>
+    <div id="handCards">
+      {% for card in team.hand %}
+        <div class="card" data-title="{{ card.title }}">
+          <p><strong>{{ card.title }}</strong></p>
+          <p>{{ card.text }}</p>
+          <p>{{ card.challenge_points }} pts, {{ card.coins }} coins</p>
+        </div>
+      {% else %}
+        <p>No cards in hand.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="shop">
+    <h2>Power-Up Shop</h2>
+    <select id="shopSelect">
+      {% for item in shop %}
+        <option value="{{ item.title }}" data-coins="{{ item.coins }}">{{ item.title }} - {{ item.coins }} coins</option>
+      {% endfor %}
+    </select>
+    <button id="buyButton">Buy</button>
+  </div>
+
+  <div class="switch">
+    <h2>Switch Teams</h2>
+    <button id="switchButton">Switch</button>
+  </div>
+
+  <script>
+    // Handle drawing a challenge
+    const drawButton = document.getElementById('drawButton');
+    const drawPool = document.getElementById('drawPool');
+    const handCards = document.getElementById('handCards');
+
+    drawButton.addEventListener('click', function() {
+      // Make an AJAX request to draw cards
+      fetch('/draw')
+        .then(response => response.json())
+        .then(data => {
+          let drawPoolContent = '';
+          data.cards.forEach(card => {
+            drawPoolContent += `
+              <div class="card" data-title="${card.title}">
+                <p><strong>${card.title}</strong></p>
+                <p>${card.text}</p>
+                <p>${card.challenge_points} pts, ${card.coins} coins</p>
+                <button class="selectCardButton">Select</button>
+              </div>
+            `;
+          });
+          drawPool.innerHTML = drawPoolContent;
+          drawPool.style.display = 'block';
+        })
+        .catch(error => console.error('Error drawing cards:', error));
+    });
+
+    // Handle selecting a card
+    drawPool.addEventListener('click', function(event) {
+      if (event.target.classList.contains('selectCardButton')) {
+        const selectedCard = event.target.closest('.card');
+        const cardTitle = selectedCard.getAttribute('data-title');
+
+        // Send selected card info to the server
+        fetch('/select_card', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_title: cardTitle })
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Add card to hand
+          const newCard = document.createElement('div');
+          newCard.classList.add('card');
+          newCard.setAttribute('data-title', data.card.title);
+          newCard.innerHTML = `
+            <p><strong>${data.card.title}</strong></p>
+            <p>${data.card.text}</p>
+            <p>${data.card.challenge_points} pts, ${data.card.coins} coins</p>
+          `;
+          handCards.appendChild(newCard);
+
+          // Update team stats dynamically
+          updateStats(data.coins, data.points);
+
+          // Hide the draw pool after selecting a card
+          drawPool.style.display = 'none';
+        })
+        .catch(error => console.error('Error selecting card:', error));
+      }
+    });
+
+    // Handle buying a power-up
+    const buyButton = document.getElementById('buyButton');
+    buyButton.addEventListener('click', function() {
+      const selectedItem = document.getElementById('shopSelect').value;
+      const selectedOption = document.querySelector(`#shopSelect option[value="${selectedItem}"]`);
+      const itemCost = parseInt(selectedOption.getAttribute('data-coins'));
+
+      // Check if enough coins
+      const currentCoins = parseInt(document.getElementById('coins').textContent);
+      if (currentCoins >= itemCost) {
+        // Send buy request to the server
+        fetch('/shop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ powerup: selectedItem })
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Update coins
+          updateStats(-itemCost, 0); // Subtract coins, no change to points
+          alert(`You bought ${selectedItem} for ${itemCost} coins!`);
+        })
+        .catch(error => console.error('Error buying power-up:', error));
+      } else {
+        alert('Not enough coins!');
+      }
+    });
+
+    // Handle switching teams
+    const switchButton = document.getElementById('switchButton');
+    switchButton.addEventListener('click', function() {
+      // Simulate team switch (backend logic would handle this)
+      fetch('/switch')
+        .then(response => response.json())
+        .then(data => {
+          alert('Switched teams!');
+        })
+        .catch(error => console.error('Error switching teams:', error));
+    });
+
+    // Helper function to update team stats
+    function updateStats(coinsChange, pointsChange) {
+      const coinsElement = document.getElementById('coins');
+      const pointsElement = document.getElementById('points');
+
+      coinsElement.textContent = parseInt(coinsElement.textContent) + coinsChange;
+      pointsElement.textContent = parseInt(pointsElement.textContent) + pointsChange;
+    }
+  </script>
+</body>
+</html>
