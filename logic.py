@@ -125,6 +125,8 @@ class Game:
         """
         :param total_players: list (even number of people)
         """
+        self.chasers = Team()
+        self.runners = Team()
         # if not teams:
         #     a = total_players
         #     random.shuffle(a)
