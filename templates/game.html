@@ -19,14 +19,26 @@
   </div>
 
   <div class="draw">
-    <h2>Draw a Challenge</h2>
-    <button id="drawButton">Draw</button>
+  <h2>Draw a Challenge</h2>
+  <form action="/draw" method="POST">
+    <button type="submit">Draw</button>
+  </form>
 
-    <div id="drawPool" style="display: none;">
-      <h3>Choose a Card</h3>
-      <!-- Cards will be dynamically injected here -->
-    </div>
-  </div>
+  {% if session.draw_pool %}
+    <h3>Choose a Card</h3>
+    <form action="/select_card" method="POST">
+      {% for card in session.draw_pool %}
+        <div class="card">
+          <p><strong>{{ card[0] }}</strong></p>
+          <p>{{ card[1] }}</p>
+          <p>{{ card[2] }} pts, {{ card[3] }} coins</p>
+          <button name="card_title" value="{{ card[0] }}">Select</button>
+        </div>
+      {% endfor %}
+    </form>
+  {% endif %}
+</div>
+
 
   <div class="hand">
     <h2>Current Hand</h2>

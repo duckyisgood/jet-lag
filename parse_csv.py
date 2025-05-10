@@ -1,5 +1,5 @@
 import pandas as pd
-from jltst_full import Challenge, Card, PowerUp, Curse
+from logic import Challenge, Card, PowerUp, Curse
 import pickle
 
 # Load your CSV file
@@ -63,11 +63,9 @@ while i < len(df):
 
 for i in challenges:
     cards.append(("ch", i))
-for i in powerups:
-    cards.append(("p", i))
 for i in curses:
     cards.append(("cu", i))
 
 
 with open("cards.pkl", 'wb') as file:
-    pickle.dump(cards, file)
+    pickle.dump((powerups, cards), file)

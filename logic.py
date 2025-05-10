@@ -27,7 +27,6 @@ class Challenge(Card):
     title: str
     type = "challenge"
 
-
     def __init__(self, title, text, c_points, coins, tiers):
         super().__init__(title, text, c_points, coins)
         self.tiers = tiers
@@ -40,12 +39,14 @@ class Challenge(Card):
 
 class PowerUp(Card):
     type = "powerup"
+
     def __init__(self, title, text, c_points, coins):
         super().__init__(title, text, c_points, coins)
 
 
 class Curse(Card):
     type = "curse"
+
     def __init__(self, title, text, c_points, coins):
         super().__init__(title, text, c_points, coins)
 
@@ -58,7 +59,7 @@ class Team:
     deck: list[Card]
     players: list[str]
 
-    def __init__(self, players):
+    def __init__(self, players: list[str] = None):
         self.players = players
 
     def startRun(self):
@@ -93,30 +94,45 @@ class Team:
         """
         if len(self.hand) >= 3:
             return False
-        penalty = [300, 150, 0]
-        self.coins -= penalty[2 - len(self.hand)]  # deduct penalty
+        penalty = [0, 150, 300]
+        self.coins -= penalty[len(self.hand)]  # deduct penalty
         if self.coins < 0:  # coins can't go below 0
             self.coins = 0
-        pool = [self.deck.pop() for i in range(3)]  # returns the pool of 3 random cards
+        pool = [self.deck.pop() for _ in range(3)]  # returns the pool of 3 random cards
         return pool
+
+    def addCard(self, card):
+        self.hand.append(card)
+
+    def cursed(self, curse: Curse):
+        self.coins += curse.coins
+        self.challenge_points += curse.challenge_points
+
+    def buy_powerup(self, p):
+        if self.coins >= p.coins:
+            self.coins -= p.coins
+            self.challenge_points -= p.challenge_points
+            return True
+        else:
+            return False
 
 
 class Game:
     chasers: Team
     runners: Team
 
-    def __init__(self, total_players, teams: list[str] = None):
+    def __init__(self, total_players=0, teams: list[str] = None):
         """
         :param total_players: list (even number of people)
         """
-        if not teams:
-            a = total_players
-            random.shuffle(a)
-            self.chasers = Team(a[len(a) / 2:])
-            self.runners = Team(a[:len(a) / 2])
-        else:
-            self.chasers = Team(teams[0])
-            self.runners = Team(teams[1])
+        # if not teams:
+        #     a = total_players
+        #     random.shuffle(a)
+        #     self.chasers = Team(a[len(a) / 2:])
+        #     self.runners = Team(a[:len(a) / 2])
+        # else:
+        #     self.chasers = Team(players=teams[0])
+        #     self.runners = Team(teams[1])
 
     def switch_sides(self, caught=True):
         if caught:  # deduct points if they were caught
@@ -124,6 +140,7 @@ class Game:
                 self.runners.challenge_points -= i.challenge_points
             if self.runners.challenge_points < 0:  # you can't have negative challenge points
                 self.runners.challenge_points = 0
+            self.chasers.startRun()
 
         # switch teams
         temp = self.chasers
@@ -132,5 +149,6 @@ class Game:
 
 
 with open("cards.pkl", 'rb') as file:
-    whole_deck: list[Card] = pickle.load(file)
-
+    cards = pickle.load(file)
+whole_deck = cards[1]
+powerups = cards[0]
